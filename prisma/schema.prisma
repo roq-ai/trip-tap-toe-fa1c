@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["clientExtensions", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  extensions      = [pgcrypto]
+}
+
+model budget_allocation {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  amount         Int
+  description    String?     @db.VarChar(255)
+  travel_plan_id String      @db.Uuid
+  user_id        String      @db.Uuid
+  created_at     DateTime    @default(now()) @db.Timestamp(6)
+  updated_at     DateTime    @default(now()) @db.Timestamp(6)
+  travel_plan    travel_plan @relation(fields: [travel_plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user           user        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model organization {
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String?       @db.VarChar(255)
+  name        String        @db.VarChar(255)
+  created_at  DateTime      @default(now()) @db.Timestamp(6)
+  updated_at  DateTime      @default(now()) @db.Timestamp(6)
+  user_id     String        @db.Uuid
+  tenant_id   String        @db.VarChar(255)
+  user        user          @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  travel_plan travel_plan[]
+}
+
+model personal_detail {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  address       String   @db.VarChar(255)
+  phone_number  String   @db.VarChar(20)
+  date_of_birth DateTime @db.Date
+  gender        String   @db.VarChar(10)
+  user_id       String   @db.Uuid
+  created_at    DateTime @default(now()) @db.Timestamp(6)
+  updated_at    DateTime @default(now()) @db.Timestamp(6)
+  user          user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model travel_plan {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  destination       String              @db.VarChar(100)
+  start_date        DateTime            @db.Date
+  end_date          DateTime            @db.Date
+  budget            Int
+  status            String              @db.VarChar(50)
+  organization_id   String              @db.Uuid
+  user_id           String              @db.Uuid
+  created_at        DateTime            @default(now()) @db.Timestamp(6)
+  updated_at        DateTime            @default(now()) @db.Timestamp(6)
+  budget_allocation budget_allocation[]
+  organization      organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user              user                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model user {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String              @unique @db.VarChar(255)
+  firstName         String?             @db.VarChar(255)
+  lastName          String?             @db.VarChar(255)
+  roq_user_id       String              @db.VarChar(255)
+  tenant_id         String              @db.VarChar(255)
+  created_at        DateTime            @default(now()) @db.Timestamp(6)
+  updated_at        DateTime            @default(now()) @db.Timestamp(6)
+  budget_allocation budget_allocation[]
+  organization      organization[]
+  personal_detail   personal_detail[]
+  travel_plan       travel_plan[]
+}
